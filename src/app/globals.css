@@ -172,6 +172,8 @@ label,.field-label{color:var(--muted)}
 [data-theme="dark"] .day-cell.blank,[data-theme="dark"] .exam-week-cell{background:#303030}
 [data-theme="dark"] .exam-week-label{background:#494949;color:#e1e1e1}
 [data-theme="dark"] .notice.success,[data-theme="dark"] .form-success{background:#363342;color:#d8caed;border-color:#5f5474}
+.auth-brand{display:flex;align-items:center;gap:12px}
+.auth-brand strong{font-family:"Liberation Mono","Courier New",monospace;font-size:1.5rem;letter-spacing:-.04em;color:#f2f2f2}
 .main-area{position:relative}
 .page-content{padding-top:70px}
 .top-account-menu{position:absolute;top:14px;right:26px;z-index:9}
