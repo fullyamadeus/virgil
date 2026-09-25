@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createClient } from "@supabase/supabase-js";
+import { materialStoragePath } from "../src/lib/material-upload";
 
 test("local Supabase keeps two students isolated through PDF upload and practice", { skip: process.env.RUN_LIVE_TESTS !== "1", timeout: 120_000 }, async () => {
   const status = execFileSync("./node_modules/.bin/supabase", ["status", "-o", "env"], { encoding: "utf8" });
@@ -45,16 +46,18 @@ test("local Supabase keeps two students isolated through PDF upload and practice
 
     const { POST: upload } = await import("../src/app/api/upload/route");
     const pdf = await readFile("node_modules/pdf-parse/test/data/04-valid.pdf");
-    const form = new FormData();
-    form.set("enrollmentId", enrollment.data!.id);
-    form.set("file", new File([pdf], "lesson.pdf", { type: "application/pdf" }));
-    const uploaded = await upload(new Request("http://localhost/api/upload", { method: "POST", headers: { Authorization: `Bearer ${a.token}` }, body: form }));
+    const documentId = randomUUID();
+    const path = materialStoragePath(a.user.id, enrollment.data!.id, documentId, "lesson.pdf");
+    const stored = await a.client.storage.from("study-materials").upload(path, pdf, { contentType: "application/pdf", upsert: false });
+    assert.ifError(stored.error);
+    paths.push(path);
+    const uploaded = await upload(new Request("http://localhost/api/upload", { method: "POST", headers: { Authorization: `Bearer ${a.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ id: documentId, enrollmentId: enrollment.data!.id, folderId: null, filename: "lesson.pdf", displayName: "lesson.pdf", materialKind: "other", examDate: null }) }));
     assert.equal(uploaded.status, 200, await uploaded.clone().text());
-    const documentId = (await uploaded.json()).id as string;
+    assert.equal((await uploaded.json()).id, documentId);
     const doc = await a.client.from("documents").select("storage_path,status,page_count").eq("id", documentId).single();
     assert.equal(doc.data?.status, "ready");
     assert.equal(doc.data?.page_count, 5);
-    paths.push(doc.data!.storage_path);
+    assert.equal(doc.data?.storage_path, path);
     const deniedDoc = await b.client.from("documents").select("id").eq("id", documentId);
     assert.equal(deniedDoc.data?.length, 0);
     const deniedFile = await b.client.storage.from("study-materials").createSignedUrl(doc.data!.storage_path, 60);

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { BookOpen, FileText, Plus, Trash2, X } from "lucide-react";
+import { uploadMaterial } from "@/lib/material-upload";
 import { skopjeDateKey } from "@/lib/time";
 
 type Book = { id: string; title: string; storage_path: string; byte_size: number };
@@ -58,15 +59,8 @@ export default function CourseResources({ client, session, enrollmentId, books, 
     await run(async () => {
       let documentId: string | null = null;
       if (file) {
-        const body = new FormData();
-        body.append("file", file);
-        body.append("enrollmentId", enrollmentId);
-        body.append("materialKind", "lecture");
-        const token = (await client.auth.getSession()).data.session?.access_token;
-        const response = await fetch("/api/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Slides upload failed.");
-        documentId = result.id;
+        const uploaded = await uploadMaterial(client, session.user.id, enrollmentId, file, { materialKind: "lecture" });
+        documentId = uploaded.id;
       }
       const inserted = await client.from("lectures").insert({ user_id: session.user.id, enrollment_id: enrollmentId, title: title.trim(), lecture_date: date, notes: notes.trim() || null, document_id: documentId });
       if (inserted.error) return inserted;

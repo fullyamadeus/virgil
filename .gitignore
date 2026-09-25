@@ -10,3 +10,4 @@ coverage/
 supabase/.temp/
 *.tsbuildinfo
 .DS_Store
+IDEA.md

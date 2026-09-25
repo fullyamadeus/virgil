@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { ChevronRight, CircleHelp, ExternalLink, FileText, Folder, Link2, Plus, Trash2, X } from "lucide-react";
+import { uploadMaterial } from "@/lib/material-upload";
 
 export type MaterialKind = "past_exam" | "single_question" | "study_guide" | "other";
 export type StudyFolder = { id: string; enrollment_id: string; parent_id: string | null; name: string };
@@ -60,17 +61,7 @@ export default function Materials({ client, session, enrollmentId, folders, docu
     }
     if (!file) return;
     await run(async () => {
-      const body = new FormData();
-      body.append("file", file);
-      body.append("enrollmentId", enrollmentId);
-      body.append("displayName", title);
-      body.append("materialKind", kind);
-      if (kind === "past_exam") body.append("examDate", examDate);
-      if (folderId) body.append("folderId", folderId);
-      const token = (await client.auth.getSession()).data.session?.access_token;
-      const response = await fetch("/api/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Upload failed.");
+      await uploadMaterial(client, session.user.id, enrollmentId, file, { displayName: title, materialKind: kind, folderId, examDate: kind === "past_exam" ? examDate : null });
       resetForm();
     }, "Material uploaded and indexed.");
   }
