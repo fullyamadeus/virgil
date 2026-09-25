@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Virgil",
   description: "A study workspace for FINKI students.",
-  icons: { icon: "/assets/virgil-logo.png" },
+  icons: { icon: "/assets/virgil-mark.svg" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
